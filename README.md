@@ -11,9 +11,11 @@ Required Python modules:
 * pandas
 * pymongo
 * pysolr
+* flask
 
-Requires running SIBiLS Elasticsearch and MongoDB servers 
-Requires running sibtm-terminology
+Other resources:
+*Requires running SIBiLS Elasticsearch and MongoDB servers 
+*Requires running sibtm-terminology
 	
 	
 Python installation instructions
