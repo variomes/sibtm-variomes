@@ -14,8 +14,8 @@ Required Python modules:
 * flask
 
 Other resources:
-*Requires running SIBiLS Elasticsearch and MongoDB servers 
-*Requires running sibtm-terminology
+* Requires running SIBiLS Elasticsearch and MongoDB servers 
+* Requires running sibtm-terminology
 	
 	
 Python installation instructions
