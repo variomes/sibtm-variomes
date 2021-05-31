@@ -1,0 +1,11 @@
+term;mesh code;min age;max age
+adult;D000328;19;44
+aged, 80 and over;D000369;80;200
+middle aged;D008875;45;64
+child;D002648;6;12
+adolescent;D000293;13;18
+aged;D000368;65;79
+young adult;D055815;19;24
+child preschool;D002675;2;5
+infant;D007223;0;2
+infant, newborn;D007231;0;1

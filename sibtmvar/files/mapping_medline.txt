@@ -1,0 +1,3 @@
+date    pubyear
+publication_date entrez_date
+meshs   mesh_terms
