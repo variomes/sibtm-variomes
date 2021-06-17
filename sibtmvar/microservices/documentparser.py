@@ -190,6 +190,10 @@ class DocumentParser:
                         self.requested_fields[self.fields_mapping.convertFieldToUserNames(field)] = doc_json['_source'][field].split("|")
                     else:
                         self.requested_fields[self.fields_mapping.convertFieldToUserNames(field)] = []
+                elif field == "authors":
+                    self.requested_fields[self.fields_mapping.convertFieldToUserNames(field)] = doc_json['_source'][field].split("|")
+                elif field == "publication_types":
+                    self.requested_fields[self.fields_mapping.convertFieldToUserNames(field)] = doc_json['_source'][field].split("|")
                 else:
                     self.requested_fields[self.fields_mapping.convertFieldToUserNames(field)] = doc_json['_source'][field]
 
