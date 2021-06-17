@@ -279,6 +279,7 @@ class RankDoc:
         documents_json = []
 
         # For each document
+        rank = 1
         for _, row in self.documents_df.iterrows():
 
             # Get the final score
@@ -291,6 +292,10 @@ class RankDoc:
             # Push the final score to the document
             document = row['document']
             document.setFinalScore(score)
+
+            # Push the rank to the document
+            document.setRank(rank)
+            rank += 1
 
             # If the document is not yet highlighted, do it
             if not hasattr(document, "stats"):

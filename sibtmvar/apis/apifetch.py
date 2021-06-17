@@ -51,7 +51,6 @@ def fetchDoc(request, conf_file=None, conf_mode="prod"):
         query.setGenVars(gen_vars_txt)
         query.setGender(gender_txt)
         query.setAge(age_txt)
-        query.normalize()
 
         # Initialize the json output
         output = {}

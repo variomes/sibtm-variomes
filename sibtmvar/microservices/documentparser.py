@@ -31,6 +31,8 @@ class DocumentParser:
         the collection of the document
     final_score: double
         the score of the document (default: 0)
+    rank: int
+        the rank of the document
     elastic_score: dict
         a set of scores
     fields_mapping: FieldsMapping
@@ -71,6 +73,7 @@ class DocumentParser:
         # Initialize variables
         self.elastic_scores = {}
         self.final_score = 0
+        self.rank = 0
         self.requested_fields = {}
         self.snippets ={}
 
@@ -105,6 +108,10 @@ class DocumentParser:
     def setFinalScore(self, final_score):
         ''' Set the final score of the document '''
         self.final_score = final_score
+
+    def setRank(self, rank):
+        ''' Set the rank of the document '''
+        self.rank = rank
 
     def addSnippets(self, snippets_json):
         ''' Add a set of sentences containing the variants '''
@@ -263,6 +270,7 @@ class DocumentParser:
         self.final_doc['id'] = self.doc_id
         self.final_doc['collection'] = self.collection
         self.final_doc['score'] = self.final_score
+        self.final_doc['rank'] = self.rank
 
         # Requested json fields
         self.final_doc.update(self.requested_fields)
