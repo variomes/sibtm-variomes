@@ -231,7 +231,7 @@ class DocumentParser:
                 json_snipet['section'] = section
                 highlighter = hl.Highlight(sentence, self.hl_entities)
                 json_snipet['text'] = highlighter.highlighted_text
-                self.cleaned_snippets[section].append(json_snipet)
+                self.cleaned_snippets.append(json_snipet)
 
     def loadComments(self):
         ''' Search for info for comments'''
