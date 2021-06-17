@@ -221,11 +221,14 @@ class DocumentParser:
         # Process snipets
         self.cleaned_snippets = {}
         for section, snippets in self.snippets.items():
-            self.cleaned_snippets[section] = []
+            self.cleaned_snippets = []
             sentences = list(dict.fromkeys(snippets))
             for sentence in sentences:
+                json_snipet = {}
+                json_snipet['section'] = section
                 highlighter = hl.Highlight(sentence, self.hl_entities)
-                self.cleaned_snippets[section].append(highlighter.highlighted_text)
+                json_snipet['text'] = highlighter.highlighted_text
+                self.cleaned_snippets[section].append(json_snipet)
 
     def loadComments(self):
         ''' Search for info for comments'''
