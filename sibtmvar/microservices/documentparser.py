@@ -94,7 +94,7 @@ class DocumentParser:
             # Add pmid to requested fields in order to update the document ids
             if self.collection != "medline" and "pmid" not in self.ret_fields:
                 self.ret_fields.append("pmid")
-            self.hl_fields = self.fields_mapping.convertListFromUserNames(self.conf_file.settings['settings_user']['hl_fields_' + self.collection])
+            self.hl_fields = self.fields_mapping.convertListToUserNames(self.conf_file.settings['settings_user']['hl_fields_' + self.collection])
 
 
     def setHighlightedEntities(self, hl_entities):
