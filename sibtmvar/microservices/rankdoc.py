@@ -11,6 +11,7 @@ from sibtmvar.microservices import essearch as es
 from sibtmvar.microservices import merging as me
 from sibtmvar.microservices import documentparser as dp
 from sibtmvar.microservices import scoring as sc
+from sibtmvar.microservices import ct
 
 class RankDoc:
     '''
@@ -182,7 +183,7 @@ class RankDoc:
             # Get the dataframe with final scores
             self.documents_df = scoring_function.documents_df
 
-    def searchCt(self):
+    def searchCtWS(self):
         ''' Retrieve clinical trials using CT webservice '''
 
         # Build query url
@@ -271,6 +272,67 @@ class RankDoc:
         self.documents_df.set_index("identifier", inplace=True)
         #pd.set_option("display.max_rows", None, "display.max_columns", None)
         #print(self.init_documents_df)
+
+    def searchCt(self):
+        ''' Retrieve clinical trials using CT webservice '''
+
+        # Add demographics
+        age = "undefined"
+        if hasattr(self.query, "age_txt") and self.query.age_txt != "none":
+           age = self.query.age_txt
+        gender = "all"
+        if hasattr(self.query, "gender_txt") and self.query.gender_txt != "none":
+           gender = self.query.gender_txt
+
+        # Add disease
+        disease = "none"
+        if hasattr(self.query, "disease_txt") and self.query.disease_txt != "none":
+            # TODO: deal with more than one disease
+            disease = self.query.disease_norm[0]['id']
+
+        # Add genvars
+        gen_vars = []
+        if hasattr(self.query, "gen_vars_txt") and self.query.gen_vars_txt != "none":
+            for element in self.query.gen_vars_norm:
+                genes, variant = element
+                for gene in genes:
+                    gen_vars.append(gene['id']+"("+variant['query_term']+")")
+        if self.query.separator == "and":
+            gen_var = ';'.join(gen_vars)
+        else:
+            gen_var = ':'.join(gen_vars)
+
+        # Retrieve Elasticsearch CT information
+        elasticsearch_host = self.conf_file.settings['elasticsearch']['url_ct']
+        elasticsearch_port = self.conf_file.settings['elasticsearch']['port_ct']
+        elasticsearch_index = self.conf_file.settings['settings_system']['es_index_ct']
+
+        ct_json = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
+
+        # Initialize a list for storing clinical trials
+        documents = []
+
+        # Parse and store clinical trials
+        if 'clinical_trials' in ct_json:
+
+            # For each clinical trial
+            for document_json in ct_json['clinical_trials']:
+                # Create a document and fetch its content
+                document_parsed = dp.DocumentParser(document_json["NCTid"], self.collection, conf_file=self.conf_file)
+                document_parsed.addScore("exact", document_json["score"], ct_json['clinical_trials'][0]["score"])
+                document_parsed.fetchMongo()
+
+                # Store the document
+                documents.append([document_parsed.doc_id, document_parsed, document_parsed.elastic_scores['exact']])
+
+                # handle errors
+                self.errors += document_parsed.errors
+
+        # Store in a dataframe
+        self.documents_df = pd.DataFrame(documents, columns=['identifier', 'document', 'final_score'])
+        self.documents_df.set_index("identifier", inplace=True)
+        # pd.set_option("display.max_rows", None, "display.max_columns", None)
+        # print(self.init_documents_df)
 
     def getJson(self):
         ''' Return ranking as a json'''
