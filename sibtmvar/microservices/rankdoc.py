@@ -277,7 +277,7 @@ class RankDoc:
         ''' Retrieve clinical trials using CT webservice '''
 
         # Add demographics
-        age = "undefined"
+        age = "none"
         if hasattr(self.query, "age_txt") and self.query.age_txt != "none":
            age = self.query.age_txt
         gender = "all"
@@ -307,8 +307,8 @@ class RankDoc:
         elasticsearch_port = self.conf_file.settings['elasticsearch']['port_ct']
         elasticsearch_index = self.conf_file.settings['settings_system']['es_index_ct']
 
-        ct_json = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
-
+        ct_str = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
+        ct_json = json.loads(ct_str)
         # Initialize a list for storing clinical trials
         documents = []
 

@@ -13,6 +13,17 @@ from elasticsearch import Elasticsearch  # Import Elasticsearch package
 def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="localhost", elasticsearch_port=9201,
                elasticsearch_index="ct_annot_data2019_nov"):
 
+    ####################################################################
+    ###################### INITIALISATION JSON ########################
+    ####################################################################
+    myjson = {}
+    myjson2 = {}
+    mylistct = {}
+    mylistct["genes_variants"] =[]
+    mylistct["genes"] = []
+    mylistct["variants"] = []
+    mylistct["diseases"] = []
+
     # Query retrieval
     # GENDER #
     gender_norm = gender.lower()
@@ -78,7 +89,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
 
             list_duo_norm.append(couple)
     else:
-        id_gene = (list_duo.split("(")[0]).upper()
+        id_gene = (list_duo.split("(")[0])
         var = list_duo.split(id_gene)[1]
         m = re.search(r"\((\w+)\)", var)
         m = m.group()
@@ -303,10 +314,11 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
         query += '}'
         return query
 
-    # Dict. initialisation
+    #Dict. initialisation
     dico_res = {}
     dico_res_alt = {}
     dico_info = {}
+    dico_infoG = {}
 
     # GESTION OPERATEUR couples
     for duo in list_duo_norm:
@@ -320,11 +332,10 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
 
         query_exec = es.search(index=elasticsearch_index, body=query, size=1000)
 
-        # JSON initialisation
-        myjson2 = {}
-
         # JSON structures construction #
+        mylistct["score"] = ('test')
         myjson2["clinical_trials"] = []
+
         # At least 1 CT as result
         if query_exec['hits']['hits']:
             for hit in query_exec['hits']['hits']:
@@ -356,6 +367,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
                     'keywords_highlight': v['keywords'],
                     'details': []
                 })
+                dico_infoG[NCTid] = json.dumps(myjson)
                 dico_info[NCTid] = json.dumps(myjson2)
                 # End of JSON structures construction #
                 if unique == 0:
@@ -376,9 +388,8 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
                     dico_res[NCTid] = score
 
             # Output construction identical no matter operator between queries
-            output = dico_info[NCTid].rstrip("}")
-            output += "},"
-            output += "\"clinical_trials\":["
+            output = dico_infoG[NCTid].rstrip("}")
+            output += ("\"clinical_trials\":[")
             parcours = 0
             dico_res_sorted = (sorted(dico_res.items(), key=lambda x: x[1], reverse=True))
             for ct in dico_res_sorted:
@@ -399,13 +410,15 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
         # No result
         else:
             NCTid = "no results"
-            myjson2["clinical_trials"].append({'NCTid': NCTid})
+            myjson2["clinical_trials"].append({
+                'NCTid': NCTid,
+            })
+            dico_infoG[NCTid] = json.dumps(myjson)
             dico_info[NCTid] = json.dumps(myjson2)
 
             # Output construction identical no matter operator between queries
-            output = dico_info[NCTid].rstrip("}")
-            output += "},"
-            output += "\"clinical_trials\":["
+            output = dico_infoG[NCTid].rstrip("}")
+            output += ("\"clinical_trials\":[")
             parcours = 0
             dico_res_sorted = (sorted(dico_res.items(), key=lambda x: x[1], reverse=True))
             for ct in dico_res_sorted:
@@ -426,5 +439,5 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
     return (output)
 
 
-#print(rankCT("NX_P15056(V600E):NX_P15056(V600K)", "C2926", "female", "20", "yes"))
+#print(rankCT("nx_p15056(V600E):NX_P15056(V600K)", "C2926", "female", "20", "yes"))
 #print(rankCT("NX_P15056(V600E)", "none", "female", "20", "yes"))
