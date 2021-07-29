@@ -307,6 +307,7 @@ class RankDoc:
         elasticsearch_port = self.conf_file.settings['elasticsearch']['port_ct']
         elasticsearch_index = self.conf_file.settings['settings_system']['es_index_ct']
 
+        print(gen_var)
         ct_str = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
         ct_json = json.loads(ct_str)
         # Initialize a list for storing clinical trials

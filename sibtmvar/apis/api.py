@@ -29,7 +29,7 @@ def rankLit():
     output = arl.rankLit(request, conf_mode=conf_mode)
     return Response(output, content_type="application/json; charset=utf-8")
 
-@app.route('/api/rankVar', methods=['GET'])
+@app.route('/api/rankVar', methods=['GET', 'POST'])
 def rankVar():
     ''' Search and rank variants for one file or query '''
     output = arv.rankVar(request, conf_mode=conf_mode)

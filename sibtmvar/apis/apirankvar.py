@@ -2,6 +2,7 @@ import os
 import time
 import copy
 from datetime import datetime
+import json
 
 from sibtmvar.apis import apiservices as api
 from sibtmvar.microservices import configuration as conf
@@ -35,8 +36,16 @@ def rankVar(request, conf_mode="prod", conf_file=None):
     url = str(request.url)
     url = url.replace("&uniqueId="+unique_id, "")
 
+    # Check if post request
+    genvars_txt = ""
+    genvars_json = None
+    if request.method == 'POST':
+        genvars_txt = request.get_data().decode('utf-8')
+        genvars_json = json.loads(genvars_txt)
+
+
     # Create the cache variables
-    api_cache_url = cache.Cache("rankvar", url, "json", conf_file=conf_file)
+    api_cache_url = cache.Cache("rankvar", url+genvars_txt, "json", conf_file=conf_file)
     api_cache_id = cache.Cache("rankvar", unique_id, "json", conf_file=conf_file)
 
     # If the result is available in cache and the user accepts to use cache (cache by id)
@@ -97,6 +106,11 @@ def rankVar(request, conf_mode="prod", conf_file=None):
 
             except:
                 errors.append({"level": "fatal", "service": "vcf", "description": "VCF file not found", "details": file_name})
+
+        # If data are posted as json
+        elif (genvars_json is not None):
+            topics = genvars_json['genvars']
+
 
         # In case of a text, get the list of topics from the case parameters
         else:

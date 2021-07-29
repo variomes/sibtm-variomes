@@ -91,6 +91,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
     else:
         id_gene = (list_duo.split("(")[0])
         var = list_duo.split(id_gene)[1]
+        var = var.replace("*","")
         m = re.search(r"\((\w+)\)", var)
         m = m.group()
         m = re.sub('\(', '', m)
