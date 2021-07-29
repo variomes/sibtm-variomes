@@ -205,7 +205,12 @@ class DocumentParser:
 
 
         # Load statistics
-        self.stats = st.DocStats(self.doc_id, self.collection, conf_file=self.conf_file)
+        doc_id = self.doc_id
+        if (self.collection == "pmc"):
+            doc_id = self.requested_fields['pmcid']
+
+        self.stats = st.DocStats(doc_id, self.collection, conf_file=self.conf_file)
+
         # Add population and ct in highlighted entities
         if 'information_extraction' in self.stats.details:
             ie_entities = []
@@ -244,10 +249,6 @@ class DocumentParser:
             else:
                 self.requested_fields['date'] = self.requested_fields['start_date']
 
-
-        # Update statistics
-        self.stats.finalizeStats(self.hl_entities, self.requested_fields)
-
         # Stats error handling
         self.errors += self.stats.errors
 
@@ -262,6 +263,9 @@ class DocumentParser:
                 highlighter = hl.Highlight(sentence, self.hl_entities+ie_entities)
                 json_snipet['text'] = highlighter.highlighted_text
                 self.cleaned_snippets.append(json_snipet)
+
+         # Update statistics
+        self.stats.finalizeStats(self.hl_entities, self.requested_fields, self.cleaned_snippets)
 
     def loadComments(self):
         ''' Search for info for comments'''

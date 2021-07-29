@@ -64,10 +64,10 @@ class DocStats():
         self.details['information_extraction'] = self.getMetadataDetails(conf_file)
 
 
-    def finalizeStats(self, query_entities=None, doc_json=None):
+    def finalizeStats(self, query_entities=None, doc_json=None, snippets_json=None):
         self.details['facet_details'] = self.getFacetsDetails(self.conf_file)
-        if query_entities and doc_json is not None:
-            self.details['query_details'] = self.getQueryDetails(query_entities, doc_json)
+        if query_entities and doc_json is not None and snippets_json is not None:
+            self.details['query_details'] = self.getQueryDetails(query_entities, doc_json, snippets_json)
 
     def getMetadataDetails(self, conf_file):
         ''' Add facets relative to population and clinical trials extractions '''
@@ -192,12 +192,12 @@ class DocStats():
         # Return facets
         return facets_json
 
-    def getQueryDetails(self, hl_entities, doc_json):
+    def getQueryDetails(self, hl_entities, doc_json, snippets_json):
         ''' Add facets relative to the query '''
 
         # Get query details for pmc (limited to annotations) or other collections (based on hl)
         if self.collection == 'pmc':
-            details_json = self.getQueryDetailsPmc(hl_entities, doc_json)
+            details_json = self.getQueryDetailsPmc(hl_entities, doc_json, snippets_json)
         else:
             details_json = self.getQueryDetailsAny(hl_entities, doc_json)
 
@@ -297,7 +297,7 @@ class DocStats():
         # Return details
         return details_json
 
-    def getQueryDetailsPmc(self, hl_entities, doc_json):
+    def getQueryDetailsPmc(self, hl_entities, doc_json, snippets_json):
         ''' Add facets relative to the query '''
 
         # Initialize details json section
@@ -339,13 +339,27 @@ class DocStats():
 
                 # Check presence for each expected entity
                 for concept_id in concept_per_types:
+                    concept_status = False
 
                     # Go through each facet of this type
                     if entity_type + "s" in self.details['facet_details']:
                         for facet in self.details['facet_details'][entity_type + "s"]:
-                            if facet['id'] in concept_per_types:
-                                present.append(facet['id'])
+                            if facet['id'] == concept_id:
+                                concept_status = True
                                 break
+
+                    # If not found in the facet, check the highlighted parets
+                    if concept_status is False:
+                        # Get json as text
+                        doc_str = json.dumps(doc_json) + json.dumps(snippets_json)
+
+                        # Check presence of the concept id in the document
+                        if '<span class=\\"' + entity_type + '\\" concept_id=\\"' + concept_id + '\\">' in doc_str:
+                            concept_status = True
+
+                    if concept_status:
+                        present.append(concept_id)
+
 
                 # Store presence and absence
                 details_json['query_' + entity_type + '_present']['present'] = len(set(present))
