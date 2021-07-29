@@ -322,6 +322,9 @@ class RankDoc:
                 document_parsed.addScore("exact", document_json["score"], ct_json['clinical_trials'][0]["score"])
                 document_parsed.fetchMongo()
 
+                if "passage_variant" in document_json:
+                    document_parsed.addSnippetsCT(document_json['passage_variant'])
+
                 # Store the document
                 documents.append([document_parsed.doc_id, document_parsed, document_parsed.elastic_scores['exact']])
 

@@ -129,6 +129,21 @@ class DocumentParser:
                 # Store the sentence
                 self.snippets[section].append(sentence)
 
+
+    def addSnippetsCT(self, snippets_json):
+        ''' Add a set of sentences containing the variants '''
+
+        # For each section
+        for element in snippets_json:
+            section = element['section']
+            sentence = element['text']
+            if type(sentence) == list:
+                sentence = (', ').join(sentence)
+            if section not in self.snippets:
+                self.snippets[section] = []
+            self.snippets[section].append(sentence)
+
+
     def fetchMongo(self):
         ''' Retrieve document's information in MongoDB '''
 

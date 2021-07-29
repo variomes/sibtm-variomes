@@ -10,6 +10,31 @@ import re
 import json
 from elasticsearch import Elasticsearch  # Import Elasticsearch package
 
+#To split paragraph in sentence
+def splitParagraphIntoSentences2(paragraph):
+    sentenceEnders2 = re.compile(r"""
+        # Split sentences on whitespace between them.
+        (?:               # Group for two positive lookbehinds.
+          (?<=[.!?])      # Either an end of sentence punct,
+        | (?<=[.!?]['"])  # or end of sentence punct and quote.
+        )                 # End group of two positive lookbehinds.
+        (?<!  Mr\.   )    # Don't end sentence on "Mr."
+        (?<!  Mrs\.  )    # Don't end sentence on "Mrs."
+        (?<!  Ms\.  )    # Don't end sentence on "Ms."
+        (?<!  Jr\.   )    # Don't end sentence on "Jr."
+        (?<!  Dr\.   )    # Don't end sentence on "Dr."
+        (?<!  Prof\. )    # Don't end sentence on "Prof."
+        (?<!  Sr\.   )    # Don't end sentence on "Sr."
+        (?<!  al\.   )    # Don't end sentence on "al."
+        (?<!  \s\w\.   )
+        (?<!  Fig\.   )   # Don't end sentence on "Fig."
+        (?<!  e.g\.   )    # Don't end sentence on "Mr."
+        \s+               # Split on whitespace between sentences.
+        """,
+          re.IGNORECASE | re.VERBOSE)
+    sentenceList = sentenceEnders2.split(paragraph)
+    return sentenceList
+
 def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="localhost", elasticsearch_port=9201,
                elasticsearch_index="ct_annot_data2019_nov"):
 
@@ -52,8 +77,6 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
         regex = '[^c][\d+]'
         if re.match(regex, disease) is not None:
             id_disease = disease
-        else:
-            id_disease = "undefined"
 
     # Duo Gene-Variant
     #Define the operator...
@@ -73,6 +96,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
         list_duo = genvar
 
     if unique == 0:
+        var_ok = []
         for duo in list_duo:
             id_gene = duo.split("("[0])
             id_gene = id_gene[0].upper()
@@ -81,6 +105,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
             var = m.group()
             m = re.sub('\(', '', var)
             m = re.sub("\)", '', m)
+            var_ok.append(m)
 
             if operateur == "and":
                 couple = id_gene + ";" + m
@@ -91,11 +116,11 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
     else:
         id_gene = (list_duo.split("(")[0])
         var = list_duo.split(id_gene)[1]
-        var = var.replace("*","")
         m = re.search(r"\((\w+)\)", var)
         m = m.group()
         m = re.sub('\(', '', m)
         m = re.sub("\)", '', m)
+        var_ok = [m]
         couple = id_gene + ";" + m
         list_duo_norm.append(couple)
 
@@ -343,6 +368,107 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
                 NCTid = (hit["_id"])
                 score = (hit["_score"])
                 v = hit["_source"]
+                list_passage_variant = []
+
+                # Fields treatment to define passage variant
+                if variant_must == "yes":
+                    #Split les champs concernés par la recherche de variants
+                    # List split_official_title
+                    split_official_title = splitParagraphIntoSentences2(v['official_title'])
+                    #List split_brief_summary
+                    split_brief_summary = splitParagraphIntoSentences2(v['brief_summary'])
+                    # List split_detailed_description
+                    split_detailed_description = splitParagraphIntoSentences2(v['detailed_description'])
+                    # List split_condition
+                    split_condition = splitParagraphIntoSentences2(v['condition'])
+                    # List split_criteria
+                    split_criteria = splitParagraphIntoSentences2(v['criteria'])
+                    # List split_inclusion_criteria
+                    split_inclusion_criteria = splitParagraphIntoSentences2(v['inclusion_criteria'])
+
+                    #Savoir si un ou plusieurs variants:
+                    if len(var_ok) == 2:
+                        my_var_1 = var_ok[0]
+                        my_var_2 = var_ok[1]
+                    else:
+                        my_var_1 = var_ok[0]
+
+                    try:
+                        my_var_2
+                    except:
+                        my_var_2 = None
+
+                    # Pour chaque passage de chaque champ, je dois regarder si j'ai le variant ou les variants de la query
+                    if my_var_1 in v['brief_title']:
+                        d1 = {'section':'brief_title', 'text': v['brief_title'], 'var': my_var_1}
+                        list_passage_variant.append(d1)
+                    if my_var_2 != None:
+                        if my_var_2 in v['brief_title']:
+                            d1 = {'section': 'brief_title', 'text': v['brief_title'], 'var': my_var_2}
+                            list_passage_variant.append(d1)
+
+                    for x in split_official_title:
+                        if my_var_1 in x:
+                            d1 = {'section': 'official_title', 'text': x, 'var': my_var_1}
+                            list_passage_variant.append(d1)
+                        if my_var_2 != None:
+                            if my_var_2 in x:
+                                d1 = {'section': 'official_title', 'text': x, 'var': my_var_2}
+                                list_passage_variant.append(d1)
+
+                    for x in split_brief_summary:
+                        if my_var_1 in x:
+                            d1 = {'section': 'brief_summary', 'text': x, 'var': my_var_1}
+                            list_passage_variant.append(d1)
+                        if my_var_2 != None:
+                            if my_var_2 in x:
+                                d1 = {'section': 'brief_summary', 'text': x, 'var': my_var_2}
+                                list_passage_variant.append(d1)
+
+                    for x in split_detailed_description:
+                        if my_var_1 in x:
+                            d1 = {'section': 'detailed_description', 'text': x, 'var': my_var_1}
+                            list_passage_variant.append(d1)
+                        if my_var_2 != None:
+                            if my_var_2 in x:
+                                d1 = {'section': 'detailed_description', 'text': x, 'var': my_var_2}
+                                list_passage_variant.append(d1)
+
+                    for x in split_condition:
+                        if my_var_1 in x:
+                            d1 = {'section': 'condition', 'text': x, 'var': my_var_1}
+                            list_passage_variant.append(d1)
+                        if my_var_2 != None:
+                            if my_var_2 in x:
+                                d1 = {'section': 'condition', 'text': x, 'var': my_var_2}
+                                list_passage_variant.append(d1)
+
+                    for x in split_criteria:
+                        if my_var_1 in x:
+                            d1 = {'section': 'criteria', 'text': x, 'var': my_var_1}
+                            list_passage_variant.append(d1)
+                        if my_var_2 != None:
+                            if my_var_2 in x:
+                                d1 = {'section': 'criteria', 'text': x, 'var': my_var_2}
+                                list_passage_variant.append(d1)
+
+                    for x in split_inclusion_criteria:
+                        if my_var_1 in x:
+                            d1 = {'section': 'inclusion_criteria', 'text': x, 'var': my_var_1}
+                            list_passage_variant.append(d1)
+                        if my_var_2 != None:
+                            if my_var_2 in x:
+                                d1 = {'section': 'inclusion_criteria', 'text': x, 'var': my_var_2}
+                                list_passage_variant.append(d1)
+
+                    if my_var_1 in v['keywords']:
+                        d1 = {'section': 'keywords', 'text': v['keywords'], 'var': my_var_1}
+                        list_passage_variant.append(d1)
+                    if my_var_2 != None:
+                        if my_var_2 in v['keywords']:
+                            d1 = {'section': 'keywords', 'text': v['keywords'], 'var': my_var_2}
+                            list_passage_variant.append(d1)
+
                 myjson2["clinical_trials"].append({
                     'NCTid': NCTid,
                     'score': score,
@@ -352,21 +478,16 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
                     'minimum_age': v['minimum_age'],
                     'maximum_age': v['maximum_age'],
                     'brief_title': v['brief_title'],
-                    'brief_title_highlight': v['brief_title'],
                     'official_title': v['official_title'],
-                    'official_title_highlight': v['official_title'],
                     'brief_summary': v['brief_summary'],
-                    'brief_summary_highlight': v['brief_summary'],
                     'detailed_description': v['detailed_description'],
-                    'detailed_description_highlight': v['detailed_description'],
                     'condition': v['condition'],
                     'location': v['location'],
-                    'condition_highlight': v['condition'],
+                    'criteria': v['criteria'],
+                    'criteria_highlight': v['criteria'],
                     'inclusion_criteria': v['inclusion_criteria'],
-                    'inclusion_criteria_highlight': v['inclusion_criteria'],
+                    'passage_variant': list_passage_variant,
                     'keywords': v['keywords'],
-                    'keywords_highlight': v['keywords'],
-                    'details': []
                 })
                 dico_infoG[NCTid] = json.dumps(myjson)
                 dico_info[NCTid] = json.dumps(myjson2)
@@ -441,4 +562,4 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
 
 
 #print(rankCT("nx_p15056(V600E):NX_P15056(V600K)", "C2926", "female", "20", "yes"))
-#print(rankCT("NX_P15056(V600E)", "none", "female", "20", "yes"))
+#(rankCT("NX_P15056(V600K)", "none", "female", "20", "yes"))
