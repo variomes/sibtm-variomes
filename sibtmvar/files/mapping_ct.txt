@@ -1,3 +1,2 @@
 abstract    brief_summary
-date    start_date
 title   brief_title

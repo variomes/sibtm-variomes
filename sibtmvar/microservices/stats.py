@@ -40,15 +40,16 @@ class DocStats():
 
     '''
 
-    def __init__(self, doc_id, collection, query_entities=None, doc_json=None, conf_file=None, conf_mode="prod"):
+    def __init__(self, doc_id, collection,  conf_file=None, conf_mode="prod"):
         ''' The constructor stores the document information to process '''
 
         # Initialize a variable to store errors
         self.errors = []
 
         # Load the conf file if not provided
+        self.conf_file = conf_file
         if conf_file is None:
-            conf_file = conf.Configuration(conf_mode)
+            self.conf_file = conf.Configuration(conf_mode)
             # Cache error handling
             self.errors += self.conf_file.errors
 
@@ -60,11 +61,13 @@ class DocStats():
         self.details = {}
 
         # Get each part of details
-        self.details['facet_details'] = self.getFacetsDetails(conf_file)
         self.details['information_extraction'] = self.getMetadataDetails(conf_file)
+
+
+    def finalizeStats(self, query_entities=None, doc_json=None):
+        self.details['facet_details'] = self.getFacetsDetails(self.conf_file)
         if query_entities and doc_json is not None:
             self.details['query_details'] = self.getQueryDetails(query_entities, doc_json)
-
 
     def getMetadataDetails(self, conf_file):
         ''' Add facets relative to population and clinical trials extractions '''

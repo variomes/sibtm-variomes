@@ -1,3 +1,5 @@
+import re
+
 from sibtmvar.microservices import highlight as hl
 from sibtmvar.microservices import stats as st
 from sibtmvar.microservices import configuration as conf
@@ -201,6 +203,23 @@ class DocumentParser:
     def processDocument(self):
         ''' Highlight, generates statistics, handle snippets, etc'''
 
+
+        # Load statistics
+        self.stats = st.DocStats(self.doc_id, self.collection, conf_file=self.conf_file)
+        # Add population and ct in highlighted entities
+        if 'information_extraction' in self.stats.details:
+            ie_entities = []
+            for ie_type in ['clinical_trials', 'populations']:
+                for ie in self.stats.details['information_extraction'][ie_type]:
+                    element = {"type": ie_type,
+                               "id": ie['term'],
+                               "query_term": ie['term'],
+                               "main_term": ie['term'],
+                               "all_terms": [],
+                               "terminology": "none",
+                               "match": "exact"}
+                    ie_entities.append(element)
+
         # Highlight of requested fields
         for hl_field in self.hl_fields:
             if hl_field in self.requested_fields:
@@ -208,15 +227,26 @@ class DocumentParser:
                 if type(self.requested_fields[hl_field]) == list:
                     text_to_highlight = '; '.join(self.requested_fields[hl_field])
                     self.requested_fields[hl_field] = text_to_highlight
-                highlighter = hl.Highlight(text_to_highlight, self.hl_entities)
+                all_entities = self.hl_entities + ie_entities
+                highlighter = hl.Highlight(text_to_highlight, all_entities)
                 self.requested_fields[self.fields_mapping.convertFieldToUserNames(hl_field) + "_highlight"] = highlighter.highlighted_text
 
         # Load comments
         if ('comments_in' in self.ret_fields or 'comments_on' in self.ret_fields) and self.collection == "medline":
             self.loadComments()
 
-        # Load statistics
-        self.stats = st.DocStats(self.doc_id, self.collection, self.hl_entities, self.requested_fields, conf_file=self.conf_file)
+        # Add date for ct
+        if 'start_date' in self.ret_fields and self.collection == "ct":
+            date_match = re.search('([1-3][0-9]{3})', self.requested_fields['start_date'] , re.IGNORECASE)
+            if date_match:
+                date = date_match.group(1)
+                self.requested_fields['date'] = int(date)
+            else:
+                self.requested_fields['date'] = self.requested_fields['start_date']
+
+
+        # Update statistics
+        self.stats.finalizeStats(self.hl_entities, self.requested_fields)
 
         # Stats error handling
         self.errors += self.stats.errors
@@ -229,7 +259,7 @@ class DocumentParser:
             for sentence in sentences:
                 json_snipet = {}
                 json_snipet['section'] = section
-                highlighter = hl.Highlight(sentence, self.hl_entities)
+                highlighter = hl.Highlight(sentence, self.hl_entities+ie_entities)
                 json_snipet['text'] = highlighter.highlighted_text
                 self.cleaned_snippets.append(json_snipet)
 

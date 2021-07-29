@@ -269,12 +269,14 @@ class DocumentsScoring:
         self.fill(parsed_document, query)
 
         # Get the title
-        if hasattr(parsed_document.requested_fields, "title"):
+        if ("title" in parsed_document.requested_fields):
             title = parsed_document.requested_fields['title']
 
             # If the title is surrounded by [], it is not in English
             if re.match(r"^\[.*\].$", title):
                 return False
+            else:
+                return True
 
         else:
             return True
