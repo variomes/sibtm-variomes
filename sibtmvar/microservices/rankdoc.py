@@ -89,7 +89,7 @@ class RankDoc:
         queries = [("exact", disease, gene, variant)]
 
         # Relaxed queries if any
-        if not (disease is None or gene is None or variant is None):
+        if not (disease is None or gene is None or variant is None or len(disease) == 0 or len(gene) == 0 or variant['query_term'] == 'none'):
             if not self.conf_file.settings['settings_user']['mandatory_disease']:
                 queries.append(("gv", None, gene, variant))
             if not self.conf_file.settings['settings_user']['mandatory_gene']:
