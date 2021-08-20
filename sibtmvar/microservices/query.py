@@ -106,7 +106,7 @@ class Query:
             for gen_var in mod_gen_vars.split(";"):
 
                 # Define three ways to catch gene and variants
-                match1 = re.search("^[A-Z1-9-]+\s*", gen_var)
+                match1 = re.search("^[A-Za-z1-9-]+\s*", gen_var)
                 match2 = re.search("^none\s*", gen_var)
                 match3 = re.search("\(none\)", gen_var)
 
