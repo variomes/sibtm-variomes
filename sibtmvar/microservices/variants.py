@@ -2,6 +2,7 @@ import json
 import re
 import requests
 import sys
+import urllib.parse
 
 import xml.etree.ElementTree as ET
 
@@ -116,7 +117,7 @@ class Variant():
 
         # Build url with query
         query = self.conf_file.settings['url']['synvar']
-        query_term = "?map=false&ref=" + self.gene_term + "&variant=" + self.init_term.replace("+","%2b") + "&level=protein"
+        query_term = "?ref=" + self.gene_term + "&variant=" + urllib.parse.quote(self.init_term)
 
         # If the service works
         try:
@@ -128,19 +129,6 @@ class Variant():
             # Retrieve root of the xml
             root = ET.fromstring(url_content)
 
-            # If nothing found, try as transcript
-            if len(root.find("variant-list").findall("variant")) == 0:
-
-                # Update query
-                query_term = "?map=false&ref=" + self.gene_term + "&variant=" + self.init_term.replace("+","%2b") + "&level=transcript"
-
-                # Query synvar
-                url = requests.get(query + query_term)
-                url_content = url.text
-
-                # Retrieve root of the xml
-                root = ET.fromstring(url_content)
-
             # Parse synvar
             self.parseFromSynVar(root)
 
@@ -149,8 +137,29 @@ class Variant():
 
         # If the service fails
         except:
-            self.errors.append({"level": "warning", "service":"synvar", "description": "Synvar service failed", "details":self.gene_term + ": " + self.init_term })
-            return None
+
+            try:
+
+                # Update query
+                query_term = "?map=false&ref=" + self.gene_term + "&variant=" + urllib.parse.quote(
+                    self.init_term) + "&level=transcript"
+
+                # Query synvar
+                url = requests.get(query + query_term)
+                url_content = url.text
+
+                # Retrieve root of the xml
+                root = ET.fromstring(url_content)
+
+                # Parse synvar
+                self.parseFromSynVar(root)
+
+                # Store synvar
+                return(url_content)
+
+            except:
+                self.errors.append({"level": "warning", "service":"synvar", "description": "Synvar service failed", "details":self.gene_term + ": " + self.init_term })
+                return None
 
     def loadFromSolr(self):
         ''' Queries the sibtm-terminology module'''
