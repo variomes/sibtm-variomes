@@ -93,7 +93,7 @@ class ESQueryBuilder:
                 full_query["highlight"] = self.buildHighlight(variant_query)
 
         # Return the json
-        print(json.dumps(full_query))
+       # print(json.dumps(full_query))
         return json.dumps(full_query)
 
     def buildHighlight(self, variant_query):
@@ -109,7 +109,7 @@ class ESQueryBuilder:
 
         # Define the size of the snippet
         highlight_part['fields']['*']['fragment_size'] = 200
-        highlight_part['fields']['*']['number_of_fragments'] = 5
+        highlight_part['fields']['*']['number_of_fragments'] = 50
         highlight_part['fields']['*']['type'] = "plain"
         highlight_part['fields']['*']['fragmenter'] = "span"
 

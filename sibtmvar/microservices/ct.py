@@ -116,7 +116,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
     else:
         id_gene = (list_duo.split("(")[0])
         var = list_duo.split(id_gene)[1]
-        m = re.search(r"\((\w+)\)", var)
+        m = re.search(r"\(([\w>*]+)\)", var)
         m = m.group()
         m = re.sub('\(', '', m)
         m = re.sub("\)", '', m)
@@ -561,5 +561,5 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
     return (output)
 
 
-#print(rankCT("nx_p15056(V600E):NX_P15056(V600K)", "C2926", "female", "20", "yes"))
+#print(rankCT("nx_p15056(V600E):NX_P15056(V600K)", "C2926", "female", "20", "yes"))
 #(rankCT("NX_P15056(V600K)", "none", "female", "20", "yes"))

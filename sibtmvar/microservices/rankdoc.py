@@ -9,6 +9,7 @@ from sibtmvar.microservices import cache
 from sibtmvar.microservices import esquerybuilder as qb
 from sibtmvar.microservices import essearch as es
 from sibtmvar.microservices import merging as me
+from sibtmvar.microservices import cleaning as cl
 from sibtmvar.microservices import documentparser as dp
 from sibtmvar.microservices import scoring as sc
 from sibtmvar.microservices import ct
@@ -77,6 +78,9 @@ class RankDoc:
 
             # Merge documents
             self.merge(documents_per_query)
+
+            # Clean documents
+            self.clean()
 
             # Rank documents
             if not tuning:
@@ -169,6 +173,21 @@ class RankDoc:
         self.errors += merging.errors
         #pd.set_option("display.max_rows", None, "display.max_columns", None)
         #print(self.init_documents_df)
+
+
+    def clean(self):
+        ''' Clean documents to remove unmatched documents (e.g. *) '''
+
+        # If there is at least a document, rank the list
+        if len(self.documents_df) > 0:
+
+            # Compute the cleaning
+            cleaning_function = cl.DocumentsCleaning(self.documents_df, conf_file=self.conf_file)
+            cleaning_function.compute(self.query)
+
+            # Get the dataframe with final documents
+            self.documents_df = cleaning_function.documents_df
+
 
     def rank(self):
 
@@ -307,8 +326,13 @@ class RankDoc:
         elasticsearch_port = self.conf_file.settings['elasticsearch']['port_ct']
         elasticsearch_index = self.conf_file.settings['settings_system']['es_index_ct']
 
-        ct_str = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
-        ct_json = json.loads(ct_str)
+        try:
+            ct_str = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
+            ct_json = json.loads(ct_str)
+        except:
+            ct_json = {}
+            self.errors.append({"level": "warning", "service": "ct", "description": "Service crashed", "details": "none"})
+
         # Initialize a list for storing clinical trials
         documents = []
 
