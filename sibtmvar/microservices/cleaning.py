@@ -66,5 +66,7 @@ class DocumentsCleaning:
                     documents_to_remove.append(index)
                     self.documents_df.drop(index)
 
+        #print(documents_to_remove)
+
         self.documents_df = self.documents_df.drop(documents_to_remove)
 
