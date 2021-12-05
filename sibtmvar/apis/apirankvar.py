@@ -3,6 +3,7 @@ import time
 import copy
 from datetime import datetime
 import json
+import sys
 
 from sibtmvar.apis import apiservices as api
 from sibtmvar.microservices import configuration as conf
@@ -205,3 +206,4 @@ def rankVar(request, conf_mode="prod", conf_file=None):
 
     # Display the output for the user
     return (api.buildOutput(output, conf_file, errors, api_cache_id, api_cache_url))
+

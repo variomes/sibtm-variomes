@@ -70,6 +70,7 @@ class ESQueryBuilder:
         query_parts.append(date_query)
 
         # Add to the full query
+        #full_query["size"] = self.conf_file.settings['settings_user']['es_results_nb']
         full_query["query"] = {"bool": {"must": query_parts}}
 
         # Load mapping
@@ -207,7 +208,6 @@ class ESQueryBuilder:
 
     def buildMultiMatch(self, term):
         ''' Return a multi-match json element '''
-
         multi_match = {}
         multi_match["query"] = term
         multi_match["fields"] = self.conf_file.settings['settings_user']['search_fields_' + self.collection]

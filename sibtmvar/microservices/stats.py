@@ -248,7 +248,7 @@ class DocStats():
             details_json['query_' + entity_type + '_present'] = {}
 
             # Get all expected entities
-            concept_per_types = [hl_entity['id'] for hl_entity in hl_entities if hl_entity['type'] == entity_type]
+            concept_per_types = [hl_entity['id'] for hl_entity in hl_entities if hl_entity is not None and hl_entity['type'] == entity_type]
 
             present = []
 
@@ -273,7 +273,7 @@ class DocStats():
             if demographic_type+'_groups' in self.details['facet_details']:
 
                 # Get all expected entities
-                concept_list = [hl_entity['id'] for hl_entity in hl_entities if hl_entity['type'] == demographic_type]
+                concept_list = [hl_entity['id'] for hl_entity in hl_entities if hl_entity is not None and hl_entity['type'] == demographic_type]
 
                 if len(concept_list) != 0:
 
@@ -310,7 +310,7 @@ class DocStats():
         for entity_type in entity_types:
 
             # Get all expected entities
-            concept_per_types = [hl_entity['id'] for hl_entity in hl_entities if hl_entity['type'] == entity_type]
+            concept_per_types = [hl_entity['id'] for hl_entity in hl_entities if hl_entity is not None and hl_entity['type'] == entity_type]
 
             # Initialize the json for this entity type count
             details_json['query_' + entity_type + '_count'] = {}
@@ -333,7 +333,7 @@ class DocStats():
                 details_json['query_' + entity_type + '_present'] = {}
 
                 # Get all expected entities
-                concept_per_types = [hl_entity['id'] for hl_entity in hl_entities if hl_entity['type'] == entity_type]
+                concept_per_types = [hl_entity['id'] for hl_entity in hl_entities if hl_entity is not None and hl_entity['type'] == entity_type]
 
                 present = []
 

@@ -128,6 +128,9 @@ def processSettingsParameters(conf_file, request):
     if 'cache' in request.args and request.args['cache'] != "":
         conf_file.settings['settings_user']['cache'] = str2bool(request.args['cache'])
 
+    if 'nb' in request.args and request.args['nb'] != "":
+        conf_file.settings['settings_user']['es_results_nb'] = int(request.args['nb'])
+
     return conf_file
 
 def returnSettingsAsJson(conf_file):

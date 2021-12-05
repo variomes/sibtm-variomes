@@ -3,6 +3,7 @@ import urllib.request as ur
 import json
 import sys
 import math
+from datetime import datetime
 
 from sibtmvar.microservices import configuration as conf
 from sibtmvar.microservices import cache
@@ -12,7 +13,9 @@ from sibtmvar.microservices import merging as me
 from sibtmvar.microservices import cleaning as cl
 from sibtmvar.microservices import documentparser as dp
 from sibtmvar.microservices import scoring as sc
+from sibtmvar.microservices import filling as fi
 from sibtmvar.microservices import ct
+
 
 class RankDoc:
     '''
@@ -59,13 +62,16 @@ class RankDoc:
 
     def process(self, tuning=False):
         ''' Execute the query to retrieve the ranked list of documents'''
-
+        time_1 = datetime.now()
         # Initialize variable to store documents
         documents_per_query = []
 
         # For clinical trial, call the CT webservice
         if self.collection == "ct":
             self.searchCt()
+
+            time_interval = datetime.now() - time_1
+            print("ct: "+str(time_interval))
 
         # For literature
         else:
@@ -76,15 +82,47 @@ class RankDoc:
                 documents = self.searchLit(self.query.disease_norm, gene, variant)
                 documents_per_query.append(documents)
 
+
+            time_interval = datetime.now() - time_1
+            if not tuning:
+                print("search: "+str(time_interval))
+
             # Merge documents
             self.merge(documents_per_query)
 
+            time_interval = datetime.now() - time_1
+            if not tuning:
+                print("merged: "+str(time_interval))
+
+            # Highlight documents
+            self.highlight()
+
+            time_interval = datetime.now() - time_1
+            if not tuning:
+                print("highlight: " + str(time_interval))
+
+            # Fill documents
+            self.fill()
+
+            time_interval = datetime.now() - time_1
+            if not tuning:
+                print("fill: "+str(time_interval))
+
+
+
             # Clean documents
-            self.clean()
+            if not tuning:
+                self.clean()
+                time_interval = datetime.now() - time_1
+                print("clean: "+str(time_interval))
 
             # Rank documents
             if not tuning:
                 self.rank()
+                self.cut()
+
+                time_interval = datetime.now() - time_1
+                print("rank: "+str(time_interval))
 
     def searchLit(self, disease, gene, variant):
         ''' Search for document for a triplet '''
@@ -174,6 +212,29 @@ class RankDoc:
         #pd.set_option("display.max_rows", None, "display.max_columns", None)
         #print(self.init_documents_df)
 
+    def fill(self):
+        # If there is at least a document, fill the documents information
+        if len(self.documents_df) > 0:
+
+            # Compute the scoring function
+            filling_function = fi.DocumentsFilling(self.documents_df, conf_file=self.conf_file)
+            filling_function.compute(self.query)
+            self.errors += filling_function.errors
+
+            # Get the dataframe with finals scores
+            self.documents_df = filling_function.documents_df
+
+
+    def highlight(self):
+
+        for index, row in self.documents_df.iterrows():
+
+            # Check if highlight is present
+            document = row['document']
+            if not hasattr(document, "stats"):
+                document.setHighlightedEntities(self.query.getHlEntities())
+                document.processDocument()
+
 
     def clean(self):
         ''' Clean documents to remove unmatched documents (e.g. *) '''
@@ -201,6 +262,14 @@ class RankDoc:
 
             # Get the dataframe with final scores
             self.documents_df = scoring_function.documents_df
+
+    def cut(self):
+
+        # If there is at least a document, rank the list
+        if len(self.documents_df) > self.conf_file.settings['settings_user']['es_results_nb']:
+
+            # Get the dataframe with final scores
+            self.documents_df = self.documents_df.head(self.conf_file.settings['settings_user']['es_results_nb'])
 
     def searchCtWS(self):
         ''' Retrieve clinical trials using CT webservice '''
@@ -327,6 +396,8 @@ class RankDoc:
         elasticsearch_index = self.conf_file.settings['settings_system']['es_index_ct']
 
         try:
+            if gender == "all":
+                gender = "none"
             ct_str = ct.rankCT(gen_var, disease, gender, age, "yes", elasticsearch_host, elasticsearch_port, elasticsearch_index)
             ct_json = json.loads(ct_str)
         except:

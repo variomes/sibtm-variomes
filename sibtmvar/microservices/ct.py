@@ -37,7 +37,11 @@ def splitParagraphIntoSentences2(paragraph):
 
 def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="localhost", elasticsearch_port=9201,
                elasticsearch_index="ct_annot_data2019_nov"):
-
+    print(genvar)
+    print(disease)
+    print(gender)
+    print(age)
+    print(variant_must)
     ####################################################################
     ###################### INITIALISATION JSON ########################
     ####################################################################
@@ -144,13 +148,23 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
         query += '      "must":['
 
         # condition: gender
-        query += '          {"bool":{'
-        query += '              "should": ['
-        query += '                {"match": {"gender":{"query": ' + "\"" + gender_norm + "\"" + '}}},'
-        query += '                {"match": {"gender":{"query": "All"}}}'
-        query += '              ]'
-        query += '           }'
-        query += '           }'
+        if gender_norm != "none":
+            query += ' {"bool":{'
+            query += ' "should": ['
+            query += ' {"match": {"gender":{"query": ' + "\"" + gender_norm + "\"" + '}}},'
+            query += ' {"match": {"gender":{"query": "All"}}}'
+            query += ' ]'
+            query += ' }'
+            query += ' }'
+        else:
+            query += ' {"bool":{'
+            query += ' "should": ['
+            query += ' {"match": {"gender":{"query": "All"}}},'
+            query += ' {"match": {"gender":{"query": "Male"}}},'
+            query += ' {"match": {"gender":{"query": "Female"}}}'
+            query += ' ]'
+            query += ' }'
+            query += ' }'
 
         # condition: age (min and max)
         if age != "none":
@@ -224,14 +238,23 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
             query += ','
             query += '  { "bool":{'
             query += '      "must":['
-            # condition:  gender
-            query += '          {"bool":{'
-            query += '              "should": ['
-            query += '                {"match": {"gender":{"query": ' + "\"" + gender_norm + "\"" + '}}},'
-            query += '                {"match": {"gender":{"query": "All"}}}'
-            query += '              ]'
-            query += '           }'
-            query += '           }'
+            if gender_norm != "none":
+                query += ' {"bool":{'
+                query += ' "should": ['
+                query += ' {"match": {"gender":{"query": ' + "\"" + gender_norm + "\"" + '}}},'
+                query += ' {"match": {"gender":{"query": "All"}}}'
+                query += ' ]'
+                query += ' }'
+                query += ' }'
+            else:
+                query += ' {"bool":{'
+                query += ' "should": ['
+                query += ' {"match": {"gender":{"query": "All"}}},'
+                query += ' {"match": {"gender":{"query": "Male"}}},'
+                query += ' {"match": {"gender":{"query": "Female"}}}'
+                query += ' ]'
+                query += ' }'
+                query += ' }'
 
             # condition: age (min and max)
             if age != "none":
@@ -384,6 +407,7 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
                     # List split_criteria
                     split_criteria = splitParagraphIntoSentences2(v['criteria'])
                     # List split_inclusion_criteria
+
                     split_inclusion_criteria = splitParagraphIntoSentences2(v['inclusion_criteria'])
 
                     #Savoir si un ou plusieurs variants:
@@ -468,7 +492,6 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
                         if my_var_2 in v['keywords']:
                             d1 = {'section': 'keywords', 'text': v['keywords'], 'var': my_var_2}
                             list_passage_variant.append(d1)
-
                 myjson2["clinical_trials"].append({
                     'NCTid': NCTid,
                     'score': score,
@@ -562,4 +585,4 @@ def rankCT(genvar, disease, gender, age, variant_must, elasticsearch_host="local
 
 
 #print(rankCT("nx_p15056(V600E):NX_P15056(V600K)", "C2926", "female", "20", "yes"))
-#(rankCT("NX_P15056(V600K)", "none", "female", "20", "yes"))
+#(rankCT("NX_P15056(V600K)", "none", "none", "none", "yes"))

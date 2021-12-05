@@ -43,6 +43,7 @@ class EsSearch:
 
         # Define the cache
         es_cache = cache.Cache("es", query, "json", conf_file=self.conf_file)
+        print(query)
 
         json_response = None
 

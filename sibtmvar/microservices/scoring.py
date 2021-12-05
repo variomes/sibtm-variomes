@@ -48,13 +48,6 @@ class DocumentsScoring:
         if 'relax' in self.conf_file.settings['settings_ranking']['strategies']:
             columns = ['dg', 'dv', 'gv']
 
-            if not 'relax' in self.documents_df:
-
-                # Normalize parents columns
-                for column in columns:
-                    if self.documents_df[column].max() != 0.0:
-                        self.documents_df[column] = self.documents_df[column] / self.documents_df[column].max()
-
             # Compute total score
             self.documents_df['relax'] = self.documents_df.apply(lambda row: self.computeTotal(row, columns, "relax"), axis=1)
 
@@ -64,13 +57,6 @@ class DocumentsScoring:
              # Fill annotations density per entity_type
              columns = ['drugs', 'diseases', 'genes']
 
-             if not 'annot' in self.documents_df:
-                 for column in columns:
-                     self.documents_df[column] = self.documents_df.apply(lambda row: self.fillAnnotations(row, column, query), axis=1)
-
-                     # Normalize annotations density
-                     self.documents_df[column] = self.normalize(self.documents_df[column])
-
              # Compute total score
              self.documents_df['annot'] = self.documents_df.apply(lambda row: self.computeTotal(row, columns, "annot"), axis=1)
 
@@ -79,13 +65,6 @@ class DocumentsScoring:
 
             # Fill age and gender score
             columns = ['age', 'gender']
-
-            if not 'demog' in self.documents_df:
-                for column in columns:
-                    self.documents_df[column] = self.documents_df.apply(lambda row: self.fillDemographics(row, column, query), axis=1)
-
-                    # Normalize demographic bonus
-                    self.documents_df[column] = self.normalize(self.documents_df[column])
 
             # Compute total score
             self.documents_df['demog'] = self.documents_df.apply(lambda row: self.computeTotal(row, columns, "demog"), axis=1)
@@ -126,7 +105,6 @@ class DocumentsScoring:
         self.documents_df["all_score"] = self.normalize(self.documents_df["all_score"])
 
         # Decrease score of non English documents
-        self.documents_df['language'] = self.documents_df.apply(lambda row: self.defineLanguage(row, query), axis=1)
         min_score_all = self.documents_df['all_score'].min()
         max_score_not = self.documents_df['all_score'].where(self.documents_df['language'] == False).max()
         self.documents_df['final_score'] = self.documents_df.apply(lambda row: self.penalizeLanguage(row, min_score_all, max_score_not), axis=1)
@@ -193,57 +171,7 @@ class DocumentsScoring:
         # Return the score
         return final_score
 
-    def fill(self, parsed_document, query):
-        ''' Search for details if needed'''
 
-        # If not yet processed, fetch the document information
-        if not hasattr(parsed_document, "stats"):
-            parsed_document.setHighlightedEntities(query.getHlEntities())
-            parsed_document.processDocument()
-            self.errors += parsed_document.errors
-
-    def fillAnnotations(self, row, annotation_type, query):
-        ''' Complete the dataframe with the number of annotations per annotation type '''
-
-        # Get the document of the row
-        parsed_document = row['document']
-
-        # If details are missing:
-        self.fill(parsed_document, query)
-
-        # If found in mongodb, return the number of annotations
-        if hasattr(parsed_document, "stats"):
-            # Return the number of annotations for this annotation type
-            if hasattr(parsed_document.stats.details['facet_details'], annotation_type):
-                return len(parsed_document.stats.details['facet_details'][annotation_type])
-
-        # Otherwise, return 0
-        else:
-            return 0
-
-    def fillDemographics(self, row, demographic_type, query):
-        ''' Complete the dataframe with the bonus score per demographic type '''
-
-        # Get the document of the row
-        parsed_document = row['document']
-
-        # If details are missing:
-        self.fill(parsed_document, query)
-
-        # If found in mongodb, return the number of annotations
-        if hasattr(parsed_document, "stats"):
-
-            if hasattr(parsed_document.stats.details['query_details'], 'query_'+demographic_type):
-                demographic_value = parsed_document.stats.details['query_details']['query_'+demographic_type]
-
-                if "same" in demographic_value:
-                    return (self.conf_file.settings['settings_ranking']['match_'+demographic_type+'_bonus'])
-
-                elif "not discussed" in demographic_value:
-                    return (self.conf_file.settings['settings_ranking']['undiscussed_'+demographic_type+'_bonus'])
-
-        # If not match, return 0
-        return 0
 
     def fillKeywords(self, row, keywords_type, query):
         ''' Complete the dataframe with the number of keywords per keywords type '''
@@ -251,35 +179,12 @@ class DocumentsScoring:
         # Get the document of the row
         parsed_document = row['document']
 
-        # If details are missing:
-        self.fill(parsed_document, query)
-
         # Get number of tags for the entity type
         keywords_value = len(re.findall('<span class="kw_' + keywords_type + '"', str(parsed_document.requested_fields)))
 
         return keywords_value
 
-    def defineLanguage(self, row, query):
-        ''' Returns true if the article is in English, false either '''
 
-        # Get the document of the row
-        parsed_document = row['document']
-
-        # If details are missing:
-        self.fill(parsed_document, query)
-
-        # Get the title
-        if ("title" in parsed_document.requested_fields):
-            title = parsed_document.requested_fields['title']
-
-            # If the title is surrounded by [], it is not in English
-            if re.match(r"^\[.*\].$", title):
-                return False
-            else:
-                return True
-
-        else:
-            return True
 
     def penalizeLanguage(self, row, min_score_all, max_score_not):
         ''' Recalculate scores of publications not in english '''

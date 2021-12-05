@@ -314,6 +314,17 @@ class DocumentParser:
                     updated_comments.append(this_comment)
                 self.requested_fields['comments_'+comment_type] = updated_comments
 
+    def saveDoc(self):
+
+        object = {}
+        object['id'] = self.doc_id
+        object['collection'] = self.collection
+        object['hl_fields'] = self.hl_fields
+        object['requested_fields'] = self.requested_fields
+        object['hl_entities'] = self.hl_entities
+
+        return object
+
     def generateJson(self):
         ''' Build the json object'''
 

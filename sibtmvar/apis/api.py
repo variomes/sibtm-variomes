@@ -4,10 +4,12 @@ from flask import Response, request
 from sibtmvar.apis import apifetch as af
 from sibtmvar.apis import apiranklit as arl
 from sibtmvar.apis import apirankvar as arv
+from sibtmvar.apis import apistatus as ast
 from sibtmvar.microservices import configuration as conf
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
+
 
 # Select the prod or dev configuration files
 conf_mode = "dev2"
@@ -16,6 +18,11 @@ conf_mode = "dev2"
 conf_file = conf.Configuration(conf_mode)
 
 #APIs for variomes services
+
+@app.route('/api/isUp', methods=['GET'])
+def isUp():
+    ''' Fetch one or several documents and return them with highlights and statistics '''
+    return Response("{}", content_type="application/json; charset=utf-8")
 
 @app.route('/api/fetchDoc', methods=['GET'])
 def fetchDoc():
@@ -33,6 +40,12 @@ def rankLit():
 def rankVar():
     ''' Search and rank variants for one file or query '''
     output = arv.rankVar(request, conf_mode=conf_mode)
+    return Response(output, content_type="application/json; charset=utf-8")
+
+@app.route('/api/getStatus', methods=['GET', 'POST'])
+def getStatus():
+    ''' Search and rank variants for one file or query '''
+    output = ast.getStatus(request, conf_mode=conf_mode)
     return Response(output, content_type="application/json; charset=utf-8")
 
 # Run the API

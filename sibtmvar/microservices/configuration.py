@@ -34,14 +34,14 @@ class Configuration():
 
         # Get the configuration file name
         config_folder = os.path.join(os.path.expanduser("~"), '.config', 'sibtm')
-        config_file_path = os.path.join(config_folder, config_file_name + ".ini")
+        self.config_file_path = os.path.join(config_folder, config_file_name + ".ini")
 
         # Check if file exist
-        if os.path.exists(config_file_path):
+        if os.path.exists(self.config_file_path):
 
             # Load the configuration file
             ini = configparser.ConfigParser()
-            ini.read(config_file_path)
+            ini.read(self.config_file_path)
 
             # Load settings from config files
             self.loadSettings(ini)
