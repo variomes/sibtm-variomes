@@ -1,5 +1,6 @@
 import flask
 from flask import Response, request
+import json
 
 from sibtmvar.apis import apifetch as af
 from sibtmvar.apis import apiranklit as arl
@@ -22,7 +23,7 @@ conf_file = conf.Configuration(conf_mode)
 @app.route('/api/isUp', methods=['GET'])
 def isUp():
     ''' Fetch one or several documents and return them with highlights and statistics '''
-    return Response("{}", content_type="application/json; charset=utf-8")
+    return Response("ok", content_type="text/plain; charset=utf-8")
 
 @app.route('/api/fetchDoc', methods=['GET'])
 def fetchDoc():
