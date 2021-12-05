@@ -10,7 +10,7 @@ setup(name='sibtmvar',
           '': ['files/*']
         },
         include_package_data= False,
-      install_requires=['elasticsearch', 'numpy', 'pymongo', 'pysolr', 'pandas', 'numpy', 'flask']
+      install_requires=['elasticsearch<7.14.0', 'numpy', 'pymongo', 'pysolr', 'pandas', 'numpy', 'flask']
 
 )
 
